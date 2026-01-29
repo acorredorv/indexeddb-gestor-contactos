@@ -102,3 +102,68 @@ window.editContact = (id) => {
         document.getElementById('contactId').value = c.id;
     };
 };
+
+
+// TAREA A: Búsqueda por nombre
+
+
+const searchInput = document.getElementById('searchInput');
+const clearSearchBtn = document.getElementById('clearSearchBtn');
+
+// 1. Escuchar el evento cuando el usuario escribe
+searchInput.addEventListener('input', (e) => {
+    const query = e.target.value.trim(); // Texto escrito
+    searchByName(query);
+});
+
+// 2. Botón limpiar
+clearSearchBtn.addEventListener('click', () => {
+    searchInput.value = '';
+    loadContacts(); // Recarga todos
+});
+
+// 3. Función principal de búsqueda
+function searchByName(query) {
+    // Si la caja está vacía, cargamos todos los contactos [cite: 89]
+    if (!query) {
+        loadContacts();
+        return;
+    }
+
+    const list = document.getElementById('contactsList');
+    list.innerHTML = ''; // Limpiar la lista actual
+
+    // Abrir transacción de solo lectura [cite: 28, 90]
+    const transaction = db.transaction(['contactos'], 'readonly');
+    const store = transaction.objectStore('contactos');
+    const index = store.index('name'); // Usamos el índice 'name' [cite: 25, 90]
+
+    // Obtenemos todos los registros ordenados por nombre
+    const request = index.getAll();
+
+    request.onsuccess = () => {
+        const contacts = request.result;
+        
+        // Filtramos en memoria los que coincidan con la búsqueda (mayúsculas/minúsculas) [cite: 29]
+        const filtered = contacts.filter(c => 
+            c.name.toLowerCase().includes(query.toLowerCase())
+        );
+
+        // Renderizamos (dibujamos) los resultados filtrados [cite: 30]
+        if (filtered.length === 0) {
+            list.innerHTML = '<li>No se encontraron coincidencias.</li>';
+        } else {
+            filtered.forEach(c => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <span><strong>${c.name}</strong> (${c.email})</span>
+                    <div class="actions">
+                        <button class="edit-btn" onclick="editContact(${c.id})">Editar</button>
+                        <button class="delete-btn" onclick="deleteContact(${c.id})">Eliminar</button>
+                    </div>
+                `;
+                list.appendChild(li);
+            });
+        }
+    };
+}
