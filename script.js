@@ -167,3 +167,101 @@ function searchByName(query) {
         }
     };
 }
+
+
+
+
+//ACTUALIZACION NOELIA 
+
+const exportBtn = document.getElementById('exportBtn');
+const importBtn = document.getElementById('importBtn');
+const fileInput = document.getElementById('fileInput');
+
+// --- 1. EXPORTAR ---
+exportBtn.addEventListener('click', () => {
+    const transaction = db.transaction(['contactos'], 'readonly');
+    const store = transaction.objectStore('contactos');
+    const request = store.getAll(); // Leer todos los contactos [cite: 23, 41]
+
+    request.onsuccess = () => {
+        const contacts = request.result;
+        // Crear archivo JSON
+        const blob = new Blob([JSON.stringify(contacts, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        // Forzar descarga
+        const a = document.createElement('a');
+        a.href = url;
+        // Nombre del archivo con fecha (ej: contacts-2023-10-05.json)
+        a.download = `contacts-${new Date().toISOString().slice(0,10)}.json`; 
+        a.click();
+        
+        URL.revokeObjectURL(url);
+    };
+});
+
+// --- 2. IMPORTAR ---
+// Al pulsar el botón, simulamos click en el input oculto
+importBtn.addEventListener('click', () => fileInput.click());
+
+// Cuando se selecciona un archivo
+fileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+        try {
+            const contacts = JSON.parse(event.target.result); // [cite: 24, 43]
+            importContactsToDB(contacts);
+        } catch (err) {
+            alert("Error al leer el JSON: " + err);
+        }
+    };
+    reader.readAsText(file);
+    // Limpiar el input para permitir cargar el mismo archivo dos veces si se desea
+    e.target.value = ''; 
+});
+
+function importContactsToDB(contacts) {
+    const transaction = db.transaction(['contactos'], 'readwrite');
+    const store = transaction.objectStore('contactos');
+    const emailIndex = store.index('email'); // Usamos índice email para verificar duplicados [cite: 27, 43]
+
+    let addedCount = 0;
+    let updatedCount = 0;
+
+    contacts.forEach(contact => {
+        // Validación básica
+        if (!contact.name || !contact.email) return;
+
+        // Verificar si el email ya existe
+        const request = emailIndex.get(contact.email);
+
+        request.onsuccess = () => {
+            const existingContact = request.result;
+
+            if (existingContact) {
+                // Si existe, actualizamos (mantenemos el ID original para no crear uno nuevo)
+                contact.id = existingContact.id;
+                store.put(contact); // put actualiza [cite: 43]
+                updatedCount++;
+            } else {
+                // Si no existe, borramos el ID (si trae uno) para que IndexedDB genere uno nuevo
+                delete contact.id;
+                store.add(contact); // add inserta [cite: 43]
+                addedCount++;
+            }
+        };
+    });
+
+    transaction.oncomplete = () => {
+        alert(`Importación completada.\nNuevos: ${addedCount}\nActualizados: ${updatedCount}`);
+        loadContacts(); // Recargar la lista visualmente [cite: 26, 44]
+    };
+    
+    transaction.onerror = (e) => {
+        console.error("Error en importación:", e.target.error);
+        alert("Hubo un error al importar los datos.");
+    };
+}

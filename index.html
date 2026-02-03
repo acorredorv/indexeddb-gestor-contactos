@@ -27,12 +27,19 @@
             <button type="submit" id="saveBtn">Guardar Contacto</button>
         </form>
 
-        <div id="toolbar"></div>
+
+        <!--ACTUALIZAZCION REALIZADA POR NOELIA-->
+        <div style="margin: 20px 0; padding: 10px; background-color: #f8f9fa; border-radius: 5px;">
+            <strong>Opciones de Respaldo:</strong><br><br>
+            <button id="exportBtn" style="background-color: #007bff; margin-right: 5px;">Exportar Datos</button>
+            <button id="importBtn" style="background-color: #28a745;">Importar Datos</button>
+            <input type="file" id="fileInput" accept="application/json" style="display: none;">
+        </div>
 
         <div class="search-box" style="margin-bottom: 20px;">
-    <input type="text" id="searchInput" placeholder="Buscar por nombre..." style="width: 70%;">
-    <button id="clearSearchBtn" style="background: #6c757d;">Limpiar</button>
-</div>
+            <input type="text" id="searchInput" placeholder="Buscar por nombre..." style="width: 70%;">
+            <button id="clearSearchBtn" style="background: #6c757d;">Limpiar</button>
+        </div>
 
         <h2>Mis Contactos</h2>
         <ul id="contactsList"></ul>
